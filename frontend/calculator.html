@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculate Your Footprint — CarbonTrace</title>
+  <meta name="description" content="Answer a few quick questions about your lifestyle to calculate your personal carbon footprint in under 3 minutes.">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+</head>
+<body>
+
+<nav class="nav" id="main-nav" role="navigation" aria-label="Main navigation"></nav>
+
+<div class="wizard-page page" id="wizard-page">
+  <div class="wizard-card" role="main">
+    <div class="wizard-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="25">
+      <div class="wizard-progress-fill" id="wizard-progress-fill" style="width:25%"></div>
+    </div>
+
+    <div class="wizard-body" id="wizard-body">
+      <!-- Step content injected by JS -->
+    </div>
+
+    <div class="wizard-footer">
+      <button id="btn-back" class="btn btn-ghost btn-sm" onclick="prevStep()" style="display:none;" aria-label="Go back">← Back</button>
+      <div class="wizard-step-dots" id="step-dots" aria-hidden="true"></div>
+      <button id="btn-next" class="btn btn-primary btn-sm" onclick="nextStep()" aria-label="Next step">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script>
+// ── Wizard State ──────────────────────────────────────────────
+let currentStep = 0;
+const totalSteps = 4;
+
+const formData = {
+  transport: {
+    car_type: 'car_petrol_per_km',
+    car_km_week: 100,
+    motorbike_km_week: 0,
+    bus_km_week: 20,
+    train_km_week: 20,
+    flights_short_year: 2,
+    flights_long_year: 1,
+  },
+  home_energy: {
+    home_size: 'medium',
+    energy_source: 'electricity_kwh_grid',
+    heating_type: 'natural_gas_kwh',
+    occupants: 2,
+  },
+  diet: {
+    diet_type: 'meat_medium_per_day',
+    food_waste: 'medium',
+    local_food: 'sometimes',
+  },
+  shopping: {
+    new_clothes_month: 2,
+    new_electronics_year: [],
+    online_orders_week: 3,
+  },
+  country: 'GB',
+};
+
+const steps = [
+  {
+    id: 'transport',
+    icon: '🚗',
+    label: 'Step 1 of 4 · Transport',
+    title: 'How do you get around?',
+    subtitle: 'Your transport habits are often the biggest slice of your carbon footprint.',
+  },
+  {
+    id: 'home_energy',
+    icon: '🏠',
+    label: 'Step 2 of 4 · Home Energy',
+    title: 'Tell us about your home',
+    subtitle: 'Heating and electricity are the second largest source of household emissions.',
+  },
+  {
+    id: 'diet',
+    icon: '🥗',
+    label: 'Step 3 of 4 · Diet',
+    title: 'What\'s on your plate?',
+    subtitle: 'Food choices have a surprisingly large climate impact — especially meat.',
+  },
+  {
+    id: 'shopping',
+    icon: '🛍',
+    label: 'Step 4 of 4 · Shopping',
+    title: 'Shopping & consumption',
+    subtitle: 'The things we buy have hidden carbon costs in their manufacturing and delivery.',
+  },
+];
+
+function renderStep() {
+  const step = steps[currentStep];
+  const body = document.getElementById('wizard-body');
+  const progressFill = document.getElementById('wizard-progress-fill');
+  const btnBack = document.getElementById('btn-back');
+  const btnNext = document.getElementById('btn-next');
+  const dots = document.getElementById('step-dots');
+  const progressbar = document.querySelector('[role="progressbar"]');
+
+  const pct = Math.round(((currentStep + 1) / totalSteps) * 100);
+  progressFill.style.width = pct + '%';
+  if (progressbar) progressbar.setAttribute('aria-valuenow', pct);
+
+  btnBack.style.display = currentStep > 0 ? 'inline-flex' : 'none';
+  btnNext.textContent = currentStep === totalSteps - 1 ? 'Calculate 🌱' : 'Next →';
+
+  // Render dots
+  dots.innerHTML = steps.map((_, i) => `
+    <div class="step-dot ${i < currentStep ? 'done' : i === currentStep ? 'active' : ''}" aria-hidden="true"></div>
+  `).join('');
+
+  // Render step body
+  body.style.opacity = '0';
+  body.style.transform = 'translateX(20px)';
+
+  setTimeout(() => {
+    body.innerHTML = `
+      <div class="wizard-step-label">${step.label}</div>
+      <h2>${step.icon} ${step.title}</h2>
+      <p>${step.subtitle}</p>
+      <div class="wizard-fields" id="step-fields">
+        ${renderFields(step.id)}
+      </div>
+    `;
+    body.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    body.style.opacity = '1';
+    body.style.transform = 'translateX(0)';
+    attachListeners(step.id);
+  }, 80);
+}
+
+function renderFields(stepId) {
+  if (stepId === 'transport') {
+    return `
+      <div class="form-group">
+        <label class="form-label" for="car-type">Primary vehicle type</label>
+        <select id="car-type" class="form-select" onchange="updateField('transport','car_type',this.value)">
+          <option value="car_none" ${formData.transport.car_type==='car_none'?'selected':''}>🚶 No car / I walk/cycle</option>
+          <option value="car_petrol_per_km" ${formData.transport.car_type==='car_petrol_per_km'?'selected':''}>⛽ Petrol / Gasoline car</option>
+          <option value="car_diesel_per_km" ${formData.transport.car_type==='car_diesel_per_km'?'selected':''}>🚗 Diesel car</option>
+          <option value="car_hybrid_per_km" ${formData.transport.car_type==='car_hybrid_per_km'?'selected':''}>🔋 Hybrid car</option>
+          <option value="car_electric_per_km" ${formData.transport.car_type==='car_electric_per_km'?'selected':''}>⚡ Electric car</option>
+          <option value="motorbike_per_km" ${formData.transport.car_type==='motorbike_per_km'?'selected':''}>🏍 Motorbike</option>
+        </select>
+      </div>
+      <div class="range-field">
+        <div class="range-header">
+          <label class="form-label" for="car-km">Car km per week</label>
+          <span class="range-val" id="car-km-val">${formData.transport.car_km_week} km</span>
+        </div>
+        <input id="car-km" type="range" min="0" max="1000" step="10" value="${formData.transport.car_km_week}"
+          oninput="updateSlider('transport','car_km_week',this.value,'car-km-val',' km')">
+      </div>
+      <div class="wizard-row">
+        <div class="range-field">
+          <div class="range-header">
+            <label class="form-label" for="flights-short">Short-haul flights/year</label>
+            <span class="range-val" id="flights-short-val">${formData.transport.flights_short_year}</span>
+          </div>
+          <input id="flights-short" type="range" min="0" max="20" step="1" value="${formData.transport.flights_short_year}"
+            oninput="updateSlider('transport','flights_short_year',this.value,'flights-short-val','')">
+        </div>
+        <div class="range-field">
+          <div class="range-header">
+            <label class="form-label" for="flights-long">Long-haul flights/year</label>
+            <span class="range-val" id="flights-long-val">${formData.transport.flights_long_year}</span>
+          </div>
+          <input id="flights-long" type="range" min="0" max="10" step="1" value="${formData.transport.flights_long_year}"
+            oninput="updateSlider('transport','flights_long_year',this.value,'flights-long-val','')">
+        </div>
+      </div>
+      <div class="wizard-row">
+        <div class="range-field">
+          <div class="range-header">
+            <label class="form-label" for="bus-km">Bus km/week</label>
+            <span class="range-val" id="bus-km-val">${formData.transport.bus_km_week} km</span>
+          </div>
+          <input id="bus-km" type="range" min="0" max="300" step="5" value="${formData.transport.bus_km_week}"
+            oninput="updateSlider('transport','bus_km_week',this.value,'bus-km-val',' km')">
+        </div>
+        <div class="range-field">
+          <div class="range-header">
+            <label class="form-label" for="train-km">Train km/week</label>
+            <span class="range-val" id="train-km-val">${formData.transport.train_km_week} km</span>
+          </div>
+          <input id="train-km" type="range" min="0" max="500" step="10" value="${formData.transport.train_km_week}"
+            oninput="updateSlider('transport','train_km_week',this.value,'train-km-val',' km')">
+        </div>
+      </div>
+    `;
+  }
+
+  if (stepId === 'home_energy') {
+    return `
+      <div class="wizard-row">
+        <div class="form-group">
+          <label class="form-label" for="home-size">Home size</label>
+          <select id="home-size" class="form-select" onchange="updateField('home_energy','home_size',this.value)">
+            <option value="studio" ${formData.home_energy.home_size==='studio'?'selected':''}>Studio / Bedsit</option>
+            <option value="small" ${formData.home_energy.home_size==='small'?'selected':''}>Small (1–2 bed)</option>
+            <option value="medium" ${formData.home_energy.home_size==='medium'?'selected':''}>Medium (3 bed)</option>
+            <option value="large" ${formData.home_energy.home_size==='large'?'selected':''}>Large (4–5 bed)</option>
+            <option value="very_large" ${formData.home_energy.home_size==='very_large'?'selected':''}>Very large (6+ bed)</option>
+          </select>
+        </div>
+        <div class="range-field">
+          <div class="range-header">
+            <label class="form-label" for="occupants">Number of occupants</label>
+            <span class="range-val" id="occupants-val">${formData.home_energy.occupants}</span>
+          </div>
+          <input id="occupants" type="range" min="1" max="8" step="1" value="${formData.home_energy.occupants}"
+            oninput="updateSlider('home_energy','occupants',this.value,'occupants-val','')">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="energy-source">Electricity source</label>
+        <select id="energy-source" class="form-select" onchange="updateField('home_energy','energy_source',this.value)">
+          <option value="electricity_kwh_grid" ${formData.home_energy.energy_source==='electricity_kwh_grid'?'selected':''}>🔌 Grid electricity (mixed)</option>
+          <option value="electricity_kwh_renewable" ${formData.home_energy.energy_source==='electricity_kwh_renewable'?'selected':''}>☀️ 100% Renewable tariff</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="heating-type">Primary heating fuel</label>
+        <select id="heating-type" class="form-select" onchange="updateField('home_energy','heating_type',this.value)">
+          <option value="natural_gas_kwh" ${formData.home_energy.heating_type==='natural_gas_kwh'?'selected':''}>🔥 Natural gas</option>
+          <option value="electricity_kwh_grid" ${formData.home_energy.heating_type==='electricity_kwh_grid'?'selected':''}>⚡ Electric heating</option>
+          <option value="electricity_kwh_renewable" ${formData.home_energy.heating_type==='electricity_kwh_renewable'?'selected':''}>♻️ Heat pump (renewable)</option>
+          <option value="heating_oil_litre" ${formData.home_energy.heating_type==='heating_oil_litre'?'selected':''}>🛢 Heating oil</option>
+          <option value="wood_pellets_kg" ${formData.home_energy.heating_type==='wood_pellets_kg'?'selected':''}>🪵 Wood / Biomass</option>
+        </select>
+      </div>
+    `;
+  }
+
+  if (stepId === 'diet') {
+    return `
+      <div class="form-group">
+        <label class="form-label" for="diet-type">Diet type</label>
+        <select id="diet-type" class="form-select" onchange="updateField('diet','diet_type',this.value)">
+          <option value="meat_heavy_per_day" ${formData.diet.diet_type==='meat_heavy_per_day'?'selected':''}>🥩 Heavy meat-eater (most meals)</option>
+          <option value="meat_medium_per_day" ${formData.diet.diet_type==='meat_medium_per_day'?'selected':''}>🍖 Average meat-eater (daily)</option>
+          <option value="meat_low_per_day" ${formData.diet.diet_type==='meat_low_per_day'?'selected':''}>🐟 Low meat (a few times/week)</option>
+          <option value="pescatarian_per_day" ${formData.diet.diet_type==='pescatarian_per_day'?'selected':''}>🐠 Pescatarian (fish, no meat)</option>
+          <option value="vegetarian_per_day" ${formData.diet.diet_type==='vegetarian_per_day'?'selected':''}>🥦 Vegetarian</option>
+          <option value="vegan_per_day" ${formData.diet.diet_type==='vegan_per_day'?'selected':''}>🌱 Vegan</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="food-waste">How much food do you waste?</label>
+        <select id="food-waste" class="form-select" onchange="updateField('diet','food_waste',this.value)">
+          <option value="none" ${formData.diet.food_waste==='none'?'selected':''}>Almost none — I meal-plan carefully</option>
+          <option value="low" ${formData.diet.food_waste==='low'?'selected':''}>Low — occasional waste</option>
+          <option value="medium" ${formData.diet.food_waste==='medium'?'selected':''}>Medium — typical household</option>
+          <option value="high" ${formData.diet.food_waste==='high'?'selected':''}>High — I throw away a lot</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="local-food">Do you buy local / seasonal food?</label>
+        <select id="local-food" class="form-select" onchange="updateField('diet','local_food',this.value)">
+          <option value="rarely" ${formData.diet.local_food==='rarely'?'selected':''}>Rarely — mostly supermarket</option>
+          <option value="sometimes" ${formData.diet.local_food==='sometimes'?'selected':''}>Sometimes — occasional farmers market</option>
+          <option value="mostly" ${formData.diet.local_food==='mostly'?'selected':''}>Mostly — I make the effort</option>
+          <option value="always" ${formData.diet.local_food==='always'?'selected':''}>Always — local/organic committed</option>
+        </select>
+      </div>
+    `;
+  }
+
+  if (stepId === 'shopping') {
+    const electronics = ['laptop', 'phone', 'tablet', 'tv'];
+    return `
+      <div class="range-field">
+        <div class="range-header">
+          <label class="form-label" for="new-clothes">New clothing items per month</label>
+          <span class="range-val" id="new-clothes-val">${formData.shopping.new_clothes_month} items</span>
+        </div>
+        <input id="new-clothes" type="range" min="0" max="20" step="1" value="${formData.shopping.new_clothes_month}"
+          oninput="updateSlider('shopping','new_clothes_month',this.value,'new-clothes-val',' items')">
+      </div>
+      <div class="range-field">
+        <div class="range-header">
+          <label class="form-label" for="online-orders">Online orders per week</label>
+          <span class="range-val" id="online-orders-val">${formData.shopping.online_orders_week} orders</span>
+        </div>
+        <input id="online-orders" type="range" min="0" max="20" step="1" value="${formData.shopping.online_orders_week}"
+          oninput="updateSlider('shopping','online_orders_week',this.value,'online-orders-val',' orders')">
+      </div>
+      <div class="form-group">
+        <label class="form-label">New electronics bought this year</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+          ${electronics.map(e => `
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-input);border-radius:var(--radius-md);border:1px solid var(--border);cursor:pointer;transition:border-color 0.2s;"
+                   id="label-${e}">
+              <input type="checkbox" id="elec-${e}" value="${e}"
+                ${formData.shopping.new_electronics_year.includes(e)?'checked':''}
+                onchange="toggleElectronics('${e}')"
+                style="width:16px;height:16px;accent-color:var(--green-500);cursor:pointer;">
+              <span style="font-size:0.875rem;text-transform:capitalize;">${e === 'tv' ? '📺 TV' : e === 'laptop' ? '💻 Laptop' : e === 'phone' ? '📱 Phone' : '📱 Tablet'}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  return '';
+}
+
+function attachListeners(stepId) {
+  // Range sliders already use oninput; checkboxes handled inline
+}
+
+function updateField(category, field, value) {
+  formData[category][field] = isNaN(value) ? value : Number(value);
+}
+
+function updateSlider(category, field, value, displayId, suffix) {
+  const num = Number(value);
+  formData[category][field] = num;
+  const el = document.getElementById(displayId);
+  if (el) el.textContent = num + suffix;
+}
+
+function toggleElectronics(item) {
+  const idx = formData.shopping.new_electronics_year.indexOf(item);
+  if (idx === -1) {
+    formData.shopping.new_electronics_year.push(item);
+  } else {
+    formData.shopping.new_electronics_year.splice(idx, 1);
+  }
+}
+
+async function nextStep() {
+  if (currentStep < totalSteps - 1) {
+    currentStep++;
+    renderStep();
+  } else {
+    await submitWizard();
+  }
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    currentStep--;
+    renderStep();
+  }
+}
+
+async function submitWizard() {
+  const btn = document.getElementById('btn-next');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Calculating...';
+
+  try {
+    const result = await api.carbon.calculate(formData);
+    savePendingResult(result);
+    savePendingInputs(formData);
+    window.location.href = '/results.html';
+  } catch (err) {
+    showToast('Calculation failed', err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Calculate 🌱';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNav();
+  renderStep();
+});
+</script>
+</body>
+</html>

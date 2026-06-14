@@ -1,0 +1,182 @@
+[
+  {
+    "id": "switch-public-transit",
+    "category": "transport",
+    "title": "Switch 2 commute days to public transit",
+    "description": "Taking the bus or train just twice a week instead of driving cuts your commute emissions by 40%. It's the single highest-impact transport swap.",
+    "co2_saving_kg_month": 47.2,
+    "effort_score": 2,
+    "tags": ["commute", "low-cost", "daily"],
+    "icon": "🚌"
+  },
+  {
+    "id": "reduce-flights",
+    "category": "transport",
+    "title": "Replace one short-haul flight with train",
+    "description": "A 500km train journey emits ~90% less CO₂ than the same flight. For European travel, Eurostar and Railjet are often comparable in time.",
+    "co2_saving_kg_month": 85.0,
+    "effort_score": 3,
+    "tags": ["travel", "high-impact"],
+    "icon": "🚂"
+  },
+  {
+    "id": "cycle-short-trips",
+    "category": "transport",
+    "title": "Cycle or walk trips under 3km",
+    "description": "Short car trips under 3km emit disproportionately more per km due to cold engine starts. Cycling these also saves parking costs.",
+    "co2_saving_kg_month": 22.1,
+    "effort_score": 2,
+    "tags": ["commute", "health", "low-cost"],
+    "icon": "🚴"
+  },
+  {
+    "id": "carpool",
+    "category": "transport",
+    "title": "Join a carpool for your commute",
+    "description": "Sharing your commute with one other person halves your per-person transport emissions immediately, with zero lifestyle change.",
+    "co2_saving_kg_month": 38.4,
+    "effort_score": 2,
+    "tags": ["commute", "social"],
+    "icon": "🚗"
+  },
+  {
+    "id": "wfh-one-day",
+    "category": "transport",
+    "title": "Work from home one extra day per week",
+    "description": "Each WFH day eliminates a full commute round-trip. Over a year, even one extra day saves hundreds of kg CO₂.",
+    "co2_saving_kg_month": 18.6,
+    "effort_score": 1,
+    "tags": ["commute", "low-effort"],
+    "icon": "🏠"
+  },
+  {
+    "id": "plant-based-2days",
+    "category": "diet",
+    "title": "Go plant-based 2 days per week",
+    "description": "Meat-free Monday (and Wednesday!) reduces your diet footprint by ~15%. Swapping beef for legumes is the single biggest diet lever.",
+    "co2_saving_kg_month": 31.5,
+    "effort_score": 2,
+    "tags": ["food", "health", "cost-saving"],
+    "icon": "🥗"
+  },
+  {
+    "id": "reduce-beef",
+    "category": "diet",
+    "title": "Halve your beef consumption",
+    "description": "Beef produces 20x more emissions than chicken and 50x more than lentils per gram of protein. Even small reductions have huge impact.",
+    "co2_saving_kg_month": 42.8,
+    "effort_score": 2,
+    "tags": ["food", "high-impact"],
+    "icon": "🐄"
+  },
+  {
+    "id": "reduce-food-waste",
+    "category": "diet",
+    "title": "Plan meals to cut food waste by half",
+    "description": "The average person wastes 30% of food they buy. Meal planning apps, proper storage, and a weekly 'use-it-up' dinner makes a big difference.",
+    "co2_saving_kg_month": 19.3,
+    "effort_score": 1,
+    "tags": ["food", "cost-saving", "low-effort"],
+    "icon": "♻️"
+  },
+  {
+    "id": "buy-local-seasonal",
+    "category": "diet",
+    "title": "Buy local and seasonal produce",
+    "description": "Seasonal local food has dramatically lower transport and refrigeration footprint. Visit a farmers' market or join a local veg box scheme.",
+    "co2_saving_kg_month": 8.7,
+    "effort_score": 2,
+    "tags": ["food", "community"],
+    "icon": "🌽"
+  },
+  {
+    "id": "switch-renewable-energy",
+    "category": "energy",
+    "title": "Switch to a renewable energy tariff",
+    "description": "Switching to a 100% renewable electricity supplier can eliminate up to 1.5 tonnes of CO₂e per year with a single phone call.",
+    "co2_saving_kg_month": 125.0,
+    "effort_score": 1,
+    "tags": ["energy", "high-impact", "one-time"],
+    "icon": "⚡"
+  },
+  {
+    "id": "lower-thermostat",
+    "category": "energy",
+    "title": "Lower thermostat by 1°C in winter",
+    "description": "Each degree reduction saves ~8% on heating bills and emissions. A smart thermostat (e.g., Nest) can automate this for you.",
+    "co2_saving_kg_month": 21.4,
+    "effort_score": 1,
+    "tags": ["energy", "cost-saving", "low-effort"],
+    "icon": "🌡️"
+  },
+  {
+    "id": "led-bulbs",
+    "category": "energy",
+    "title": "Replace remaining bulbs with LED",
+    "description": "LED bulbs use 75% less energy and last 25x longer than incandescents. Replacing 10 bulbs typically saves ~$100/year.",
+    "co2_saving_kg_month": 9.2,
+    "effort_score": 1,
+    "tags": ["energy", "one-time", "cost-saving"],
+    "icon": "💡"
+  },
+  {
+    "id": "shorter-showers",
+    "category": "energy",
+    "title": "Reduce shower time by 2 minutes",
+    "description": "A 2-minute shorter shower saves ~40 litres of water and the energy to heat it — adding up to ~10 kg CO₂e/month.",
+    "co2_saving_kg_month": 10.1,
+    "effort_score": 1,
+    "tags": ["energy", "water", "daily"],
+    "icon": "🚿"
+  },
+  {
+    "id": "unplug-standby",
+    "category": "energy",
+    "title": "Unplug devices on standby",
+    "description": "Standby power ('vampire power') accounts for 5-10% of home electricity use. Smart power strips automate this effortlessly.",
+    "co2_saving_kg_month": 7.3,
+    "effort_score": 1,
+    "tags": ["energy", "cost-saving", "low-effort"],
+    "icon": "🔌"
+  },
+  {
+    "id": "buy-secondhand",
+    "category": "shopping",
+    "title": "Buy secondhand clothes and electronics",
+    "description": "Manufacturing new clothes accounts for 10% of global carbon emissions. Thrift stores, Vinted, and eBay reduce this to near zero.",
+    "co2_saving_kg_month": 23.0,
+    "effort_score": 2,
+    "tags": ["shopping", "cost-saving"],
+    "icon": "👕"
+  },
+  {
+    "id": "keep-devices-longer",
+    "category": "shopping",
+    "title": "Use your phone for one extra year",
+    "description": "80% of a smartphone's lifetime emissions occur during manufacturing. Keeping it one extra year reduces its annual footprint by 40%.",
+    "co2_saving_kg_month": 5.8,
+    "effort_score": 1,
+    "tags": ["shopping", "tech", "cost-saving"],
+    "icon": "📱"
+  },
+  {
+    "id": "reduce-online-shopping",
+    "category": "shopping",
+    "title": "Consolidate online orders (fewer deliveries)",
+    "description": "Each home delivery package has a carbon cost. Consolidating to 1-2 orders per week vs. daily deliveries cuts shipping emissions significantly.",
+    "co2_saving_kg_month": 4.5,
+    "effort_score": 1,
+    "tags": ["shopping", "low-effort"],
+    "icon": "📦"
+  },
+  {
+    "id": "repair-dont-replace",
+    "category": "shopping",
+    "title": "Repair items instead of replacing",
+    "description": "Repair cafés, YouTube tutorials, and local repair shops can extend the life of appliances, clothes, and electronics by years.",
+    "co2_saving_kg_month": 12.0,
+    "effort_score": 3,
+    "tags": ["shopping", "community"],
+    "icon": "🔧"
+  }
+]

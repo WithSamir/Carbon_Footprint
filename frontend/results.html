@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Carbon Footprint Results — CarbonTrace</title>
+  <meta name="description" content="See your personal carbon footprint breakdown, compare to benchmarks, and discover your personalized action plan.">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+  <style>
+    .results-page { padding: 80px 0 60px; }
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 48px; }
+    .save-banner {
+      background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(20,184,166,0.08));
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: var(--radius-xl);
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 32px;
+    }
+    .save-banner-text h3 { margin-bottom: 4px; }
+    .save-banner-text p  { font-size: 0.9375rem; }
+    @media(max-width:768px){
+      .results-grid { grid-template-columns: 1fr; }
+      .save-banner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="main-nav" role="navigation" aria-label="Main navigation"></nav>
+
+<main class="results-page" id="main-content">
+  <div class="container">
+    <!-- Results hero -->
+    <div class="results-hero animate-fade-in-up" id="results-hero">
+      <p style="color:var(--green-400);font-weight:600;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Your Results</p>
+      <h1>Your Monthly Carbon Footprint</h1>
+      <p style="max-width:480px;margin:8px auto 0;">Here's a detailed breakdown of your estimated CO₂e emissions by category.</p>
+    </div>
+
+    <!-- Score ring + breakdown -->
+    <div class="results-grid" id="results-grid">
+      <!-- Left: Score ring -->
+      <div class="card" id="score-card">
+        <div class="results-score-ring">
+          <canvas id="score-ring-chart" width="200" height="200" aria-label="Carbon footprint donut chart"></canvas>
+          <div class="score-center">
+            <div class="score-number gradient-text" id="score-number">0</div>
+            <div class="score-unit">kg CO₂e</div>
+            <div class="score-period">per month</div>
+          </div>
+        </div>
+        <div class="category-breakdown" id="category-breakdown"></div>
+      </div>
+
+      <!-- Right: Benchmarks + actions -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card" id="benchmarks-card">
+          <h3 style="margin-bottom:16px;">How you compare</h3>
+          <div id="benchmarks-list"></div>
+        </div>
+        <div class="card card-glow" id="annual-card">
+          <p style="font-size:0.8125rem;color:var(--text-muted);margin-bottom:4px;">Annual projection</p>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span class="score-number gradient-text" id="annual-score" style="font-size:2rem;">0</span>
+            <span style="color:var(--text-muted);">kg CO₂e / year</span>
+          </div>
+          <div class="mt-4">
+            <p style="font-size:0.875rem;margin-bottom:8px;" id="paris-comparison-text"></p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="paris-progress" style="width:0%;background:linear-gradient(90deg,#22c55e,#ef4444);"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="percentile-card">
+          <p style="font-size:0.8125rem;color:var(--text-muted);margin-bottom:8px;">Compared to your country</p>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span class="score-number gradient-text" id="percentile-score" style="font-size:2.5rem;">—</span>
+            <div>
+              <p style="color:var(--text-primary);font-weight:600;font-size:0.9375rem;" id="percentile-label"></p>
+              <p style="font-size:0.8125rem;" id="percentile-sub"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save banner (shown when not logged in) -->
+    <div class="save-banner" id="save-banner" style="display:none;">
+      <div class="save-banner-text">
+        <h3>💾 Save your results & start tracking</h3>
+        <p>Create a free account to unlock your dashboard, track progress over time, and get personalized recommendations.</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-shrink:0;">
+        <button onclick="openAuthModal('register', onSaveSuccess)" class="btn btn-primary" id="save-create-btn">Create Free Account</button>
+        <button onclick="openAuthModal('login', onSaveSuccess)" class="btn btn-ghost" id="save-login-btn">Sign In</button>
+      </div>
+    </div>
+
+    <!-- If logged in, offer to save -->
+    <div id="save-logged-in-banner" style="display:none;" class="save-banner">
+      <div class="save-banner-text">
+        <h3>💾 Save this entry to your dashboard</h3>
+        <p>Log this as your current month's footprint to track your progress over time.</p>
+      </div>
+      <button onclick="saveEntry()" class="btn btn-primary" id="save-entry-btn">Save Entry 🌱</button>
+    </div>
+
+    <!-- Next steps -->
+    <div class="mt-8" id="next-steps-section">
+      <h2 style="text-align:center;margin-bottom:8px;">What's your biggest lever?</h2>
+      <p style="text-align:center;max-width:500px;margin:0 auto 32px;">Based on your footprint, here's where you have the most impact to reduce emissions.</p>
+      <div class="grid-3" id="quick-actions-grid"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:48px;">
+      <a href="/calculator.html" class="btn btn-ghost" id="recalculate-btn">← Recalculate</a>
+      <a href="/insights.html" class="btn btn-primary btn-lg" id="view-insights-btn" style="margin-left:12px;">View All Recommendations →</a>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script>
+const CATEGORY_CONFIG = [
+  { key: 'transport_kg',    label: 'Transport',   color: '#22c55e', icon: '🚗' },
+  { key: 'diet_kg',         label: 'Diet',        color: '#14b8a6', icon: '🥗' },
+  { key: 'home_energy_kg',  label: 'Home Energy', color: '#3b82f6', icon: '🏠' },
+  { key: 'shopping_kg',     label: 'Shopping',    color: '#a855f7', icon: '🛍' },
+];
+
+let result = null;
+
+function initResults() {
+  result = getPendingResult();
+  if (!result) {
+    window.location.href = '/calculator.html';
+    return;
+  }
+
+  renderScoreRing(result);
+  renderCategoryBreakdown(result);
+  renderBenchmarks(result);
+  renderAnnualCard(result);
+  renderQuickActions(result);
+
+  // Show/hide save banners
+  if (api.auth.isLoggedIn()) {
+    document.getElementById('save-logged-in-banner').style.display = 'flex';
+  } else {
+    document.getElementById('save-banner').style.display = 'flex';
+  }
+
+  // Animate score number
+  const el = document.getElementById('score-number');
+  animateNumber(el, 0, result.total_kg, 1400, 1);
+  const annualEl = document.getElementById('annual-score');
+  animateNumber(annualEl, 0, result.annual_projection_kg, 1400, 0);
+
+  // Percentile
+  const pctEl = document.getElementById('percentile-score');
+  const pct = result.percentile;
+  const pctLabel = document.getElementById('percentile-label');
+  const pctSub = document.getElementById('percentile-sub');
+  pctEl.textContent = `Top ${100 - pct}%`;
+  pctLabel.textContent = pct >= 60 ? '🌟 Lower than most!' : pct >= 40 ? '📍 Around average' : '⚠️ Room to improve';
+  pctSub.textContent = `Your footprint is lower than ${pct}% of people in your country.`;
+}
+
+function renderScoreRing(r) {
+  const ctx = document.getElementById('score-ring-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: CATEGORY_CONFIG.map(c => c.label),
+      datasets: [{
+        data: CATEGORY_CONFIG.map(c => Math.max(0, r[c.key] || 0)),
+        backgroundColor: CATEGORY_CONFIG.map(c => c.color),
+        borderColor: 'transparent',
+        borderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)} kg CO₂e`
+          }
+        }
+      },
+      animation: { animateRotate: true, duration: 1200 },
+    }
+  });
+}
+
+function renderCategoryBreakdown(r) {
+  const total = r.total_kg || 1;
+  const el = document.getElementById('category-breakdown');
+  el.innerHTML = CATEGORY_CONFIG.map(c => {
+    const val = r[c.key] || 0;
+    const pct = Math.round((val / total) * 100);
+    return `
+      <div class="category-row">
+        <span style="font-size:1rem;">${c.icon}</span>
+        <span class="category-name">${c.label}</span>
+        <div class="category-bar-wrap">
+          <div class="category-bar-fill" style="width:${pct}%;background:${c.color};"></div>
+        </div>
+        <span class="category-val" style="color:${c.color};">${val.toFixed(1)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderBenchmarks(r) {
+  const b = r.benchmarks;
+  const my = r.total_kg;
+  const el = document.getElementById('benchmarks-list');
+  const rows = [
+    { label: '🌍 Global Average', val: b.global_avg_month, key: 'global' },
+    { label: '🏳 National Average', val: b.national_avg_month, key: 'national' },
+    { label: '🎯 Paris Target (1.5°C)', val: b.paris_target_month, key: 'paris' },
+  ];
+  el.innerHTML = rows.map(row => {
+    const diff = my - row.val;
+    const diffText = diff < 0
+      ? `<span style="color:var(--green-400);">▼ ${Math.abs(diff).toFixed(0)} kg below</span>`
+      : `<span style="color:#f87171;">▲ ${diff.toFixed(0)} kg above</span>`;
+    return `
+      <div class="benchmark-card">
+        <span class="benchmark-label">${row.label}</span>
+        <div style="text-align:right;">
+          <div class="benchmark-val">${row.val.toFixed(0)} kg</div>
+          <div style="font-size:0.75rem;">${diffText}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAnnualCard(r) {
+  const parisAnnual = r.benchmarks.paris_target_month * 12;
+  const myAnnual = r.annual_projection_kg;
+  const ratio = Math.min((myAnnual / (parisAnnual * 3)) * 100, 100);
+  const el = document.getElementById('paris-comparison-text');
+  const elonGap = (myAnnual - parisAnnual).toFixed(0);
+  if (myAnnual <= parisAnnual) {
+    el.textContent = `🎉 You're already on track for the 1.5°C Paris target!`;
+    el.style.color = 'var(--green-400)';
+  } else {
+    el.textContent = `You need to reduce by ${elonGap} kg/year to hit the 1.5°C Paris target.`;
+  }
+  const prog = document.getElementById('paris-progress');
+  setTimeout(() => prog.style.width = ratio + '%', 300);
+}
+
+function renderQuickActions(r) {
+  const top = CATEGORY_CONFIG.sort((a, b) => (r[b.key]||0) - (r[a.key]||0)).slice(0, 3);
+  const actionMap = {
+    transport_kg: { icon: '🚌', title: 'Switch to public transit', saving: '~47 kg/month', desc: 'Your transport is your biggest impact area. Taking bus or train twice a week can cut commute emissions by 40%.' },
+    diet_kg:      { icon: '🥗', title: 'Go plant-based 2 days/week', saving: '~32 kg/month', desc: 'Your diet has huge potential. Meat-free days are the single highest-impact food change you can make.' },
+    home_energy_kg: { icon: '⚡', title: 'Switch to renewable energy', saving: '~125 kg/month', desc: 'Your home energy is a top driver. Switching to a green tariff can eliminate most of this category.' },
+    shopping_kg:  { icon: '👕', title: 'Buy secondhand', saving: '~23 kg/month', desc: 'Your shopping footprint is significant. Buying secondhand clothes and electronics makes a big dent.' },
+  };
+  const el = document.getElementById('quick-actions-grid');
+  el.innerHTML = top.map((cat, i) => {
+    const a = actionMap[cat.key];
+    return `
+      <div class="card card-hover" style="animation:fadeInUp ${0.2+i*0.1}s ease both;" id="quick-action-${i}">
+        <div style="font-size:2rem;margin-bottom:12px;">${a.icon}</div>
+        <div class="badge badge-green mb-2">${a.saving} saving</div>
+        <h4 style="margin-bottom:8px;">${a.title}</h4>
+        <p style="font-size:0.875rem;">${a.desc}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+async function saveEntry() {
+  const btn = document.getElementById('save-entry-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin-right:8px;"></div> Saving...';
+  try {
+    const inputs = getPendingInputs();
+    const data = await api.carbon.submit(inputs);
+    clearPendingResult();
+    showToast('Entry saved!', `+${data.xp_earned} XP earned 🌟`, 'success');
+    if (data.new_badges?.length) {
+      data.new_badges.forEach(b => setTimeout(() => showBadgeUnlock(b), 1000));
+    }
+    setTimeout(() => window.location.href = '/dashboard.html', 1500);
+  } catch (err) {
+    showToast('Save failed', err.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = 'Save Entry 🌱';
+  }
+}
+
+function onSaveSuccess() {
+  document.getElementById('save-banner').style.display = 'none';
+  document.getElementById('save-logged-in-banner').style.display = 'flex';
+  renderNav();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNav();
+  initResults();
+});
+</script>
+</body>
+</html>

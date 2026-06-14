@@ -1,0 +1,67 @@
+{
+  "transport": {
+    "car_petrol_per_km": 0.192,
+    "car_diesel_per_km": 0.171,
+    "car_hybrid_per_km": 0.109,
+    "car_electric_per_km": 0.053,
+    "car_none": 0.0,
+    "motorbike_per_km": 0.114,
+    "bus_per_km": 0.089,
+    "train_per_km": 0.041,
+    "flight_short_per_km": 0.255,
+    "flight_long_per_km": 0.195,
+    "flight_hours_to_km": 800
+  },
+  "home_energy": {
+    "electricity_kwh_grid": 0.233,
+    "electricity_kwh_renewable": 0.033,
+    "natural_gas_kwh": 0.203,
+    "heating_oil_litre": 2.52,
+    "lpg_kwh": 0.214,
+    "wood_pellets_kg": 0.039,
+    "average_home_kwh_month": {
+      "studio": 150,
+      "small": 250,
+      "medium": 380,
+      "large": 550,
+      "very_large": 750
+    }
+  },
+  "diet": {
+    "meat_heavy_per_day": 7.19,
+    "meat_medium_per_day": 5.63,
+    "meat_low_per_day": 4.67,
+    "pescatarian_per_day": 3.91,
+    "vegetarian_per_day": 3.81,
+    "vegan_per_day": 2.89,
+    "food_waste_factor": {
+      "none": 1.0,
+      "low": 1.08,
+      "medium": 1.18,
+      "high": 1.30
+    },
+    "local_food_discount": {
+      "rarely": 0.0,
+      "sometimes": 0.05,
+      "mostly": 0.12,
+      "always": 0.18
+    }
+  },
+  "shopping": {
+    "new_clothes_per_item": 11.5,
+    "electronics_laptop": 300.0,
+    "electronics_phone": 70.0,
+    "electronics_tablet": 130.0,
+    "electronics_tv": 580.0,
+    "streaming_per_hour": 0.036,
+    "online_shopping_package": 0.45
+  },
+  "benchmarks": {
+    "global_average_kg_year": 4800,
+    "us_average_kg_year": 14700,
+    "uk_average_kg_year": 8500,
+    "india_average_kg_year": 1900,
+    "eu_average_kg_year": 7700,
+    "paris_target_kg_year": 2300
+  }
+}

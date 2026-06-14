@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Green Actions — CarbonTrace</title>
+  <meta name="description" content="Your personalized green action recommendations ranked by impact. Commit to changes that matter for your carbon footprint.">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+  <style>
+    .insights-header { padding: 40px 0 24px; }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+      width: fit-content;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .committed-tag {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: rgba(34,197,94,0.15);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: var(--green-400);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .insight-card-guest {
+      position: relative;
+      overflow: hidden;
+    }
+    .gate-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(3,7,18,0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      text-align: center;
+      z-index: 5;
+    }
+    @media(max-width:768px){
+      .insights-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="main-nav" role="navigation" aria-label="Main navigation"></nav>
+
+<main class="page" id="main-content">
+  <div class="container">
+    <div class="insights-header">
+      <h1>My Green Actions</h1>
+      <p style="margin-top:8px;max-width:540px;">Personalized recommendations ranked by your impact-to-effort ratio. Commit to actions that fit your lifestyle.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" role="tablist" aria-label="Action tabs">
+      <button class="tab-btn active" id="tab-recs" onclick="switchTab('recommendations')" role="tab" aria-selected="true" aria-controls="panel-recommendations">Recommendations</button>
+      <button class="tab-btn" id="tab-committed" onclick="switchTab('committed')" role="tab" aria-selected="false" aria-controls="panel-committed">My Pledges</button>
+    </div>
+
+    <!-- Recommendations panel -->
+    <div id="panel-recommendations" role="tabpanel" aria-labelledby="tab-recs">
+      <div id="recs-loading" style="text-align:center;padding:60px 0;">
+        <div class="spinner" style="margin:0 auto 16px;"></div>
+        <p>Loading your personalized recommendations...</p>
+      </div>
+      <div class="insights-grid" id="recs-grid" style="display:none;"></div>
+    </div>
+
+    <!-- Committed panel -->
+    <div id="panel-committed" role="tabpanel" aria-labelledby="tab-committed" style="display:none;">
+      <div id="committed-loading" style="text-align:center;padding:60px 0;display:none;">
+        <div class="spinner" style="margin:0 auto 16px;"></div>
+        <p>Loading your pledges...</p>
+      </div>
+      <div id="committed-empty" style="display:none;" class="card" role="alert">
+        <div class="empty-state">
+          <div class="empty-state-icon">⚡</div>
+          <h3>No pledges yet</h3>
+          <p style="max-width:320px;margin:8px auto 20px;">Head over to Recommendations and commit to your first green action!</p>
+          <button onclick="switchTab('recommendations')" class="btn btn-primary" id="goto-recs-btn">View Recommendations</button>
+        </div>
+      </div>
+      <div class="insights-grid" id="committed-grid"></div>
+    </div>
+
+    <!-- Impact summary (shown when actions exist) -->
+    <div id="impact-summary" style="display:none;" class="card card-glow mt-6">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+          <h3 style="margin-bottom:4px;">Your Potential Impact</h3>
+          <p style="font-size:0.875rem;">If you complete all your pledged actions</p>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;" class="gradient-text" id="total-saving-display">0</div>
+          <div style="font-size:0.875rem;color:var(--text-muted);">kg CO₂e saved per month</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script>
+let allRecommendations = [];
+let committedActions = [];
+let activeTab = 'recommendations';
+
+const CATEGORY_LABELS = {
+  transport: '🚗 Transport',
+  diet: '🥗 Diet',
+  energy: '🏠 Energy',
+  shopping: '🛍 Shopping',
+};
+
+async function loadRecommendations() {
+  try {
+    if (!api.auth.isLoggedIn()) {
+      // Show guest state with blurred cards
+      renderGuestRecs();
+      return;
+    }
+    const data = await api.insights.recommendations();
+    allRecommendations = data.recommendations || [];
+    renderRecommendations();
+  } catch (err) {
+    document.getElementById('recs-loading').innerHTML = `
+      <p style="color:var(--danger);">Failed to load recommendations: ${err.message}</p>
+    `;
+  }
+}
+
+async function loadCommitted() {
+  if (!api.auth.isLoggedIn()) return;
+  document.getElementById('committed-loading').style.display = 'block';
+  try {
+    const data = await api.insights.myActions();
+    committedActions = data.actions || [];
+    renderCommitted();
+  } catch (err) {
+    showToast('Failed to load pledges', err.message, 'error');
+  } finally {
+    document.getElementById('committed-loading').style.display = 'none';
+  }
+}
+
+function renderGuestRecs() {
+  const el = document.getElementById('recs-loading');
+  el.style.display = 'none';
+  const grid = document.getElementById('recs-grid');
+  grid.style.display = 'grid';
+
+  // Sample preview cards
+  const previews = [
+    { icon:'🚌', title:'Switch to public transit', co2_saving_kg_month: 47.2, effort_score: 2, category: 'transport', description: 'Taking the bus or train just twice a week instead of driving cuts your commute emissions by 40%.' },
+    { icon:'🥗', title:'Go plant-based 2 days/week', co2_saving_kg_month: 31.5, effort_score: 2, category: 'diet', description: 'Meat-free days are the single highest-impact food change you can make for the planet.' },
+    { icon:'⚡', title:'Switch to renewable energy', co2_saving_kg_month: 125, effort_score: 1, category: 'energy', description: 'Switching to a 100% renewable electricity supplier can eliminate up to 1.5 tonnes of CO₂e per year.' },
+  ];
+
+  grid.innerHTML = previews.map((a, i) => `
+    <div class="insight-card insight-card-guest" style="opacity:${i === 0 ? 1 : 0.7};">
+      ${i > 0 ? `<div class="gate-overlay">
+        <div style="font-size:2rem;margin-bottom:12px;">🔒</div>
+        <p style="font-weight:600;margin-bottom:8px;">Sign in to unlock all recommendations</p>
+        <button onclick="openAuthModal('register')" class="btn btn-primary btn-sm" id="unlock-btn-${i}">Get Started Free</button>
+      </div>` : ''}
+      ${renderActionCard(a, false)}
+    </div>
+  `).join('');
+}
+
+function renderActionCard(action, isCommitted) {
+  const catLabel = CATEGORY_LABELS[action.category] || action.category;
+  const annualSaving = ((action.co2_saving_kg_month || 0) * 12).toFixed(0);
+  return `
+    <div class="insight-header">
+      <div class="insight-icon">${action.icon || '🌿'}</div>
+      <div class="insight-meta">
+        <div class="insight-title">${action.title}</div>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+          <span class="badge badge-gray">${catLabel}</span>
+          ${effortBadge(action.effort_score)}
+        </div>
+      </div>
+    </div>
+    <p class="insight-desc" style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:16px;">${action.description}</p>
+    <div class="insight-stats">
+      <div class="insight-stat">
+        <div class="insight-stat-val">${(action.co2_saving_kg_month || 0).toFixed(0)}</div>
+        <div class="insight-stat-label">kg saved/month</div>
+      </div>
+      <div class="insight-stat">
+        <div class="insight-stat-val">${annualSaving}</div>
+        <div class="insight-stat-label">kg saved/year</div>
+      </div>
+      <div class="insight-stat">
+        <div class="insight-stat-val">${action.effort_score}/5</div>
+        <div class="insight-stat-label">effort score</div>
+      </div>
+    </div>
+    ${!isCommitted ? `
+      <div class="insight-actions">
+        <button onclick="commitAction('${action.id}')" class="btn btn-primary w-full" id="commit-btn-${action.id}" ${!api.auth.isLoggedIn() ? 'onclick="openAuthModal(\'register\')" ' : ''}>
+          ✅ I'll Do This (+75 XP)
+        </button>
+      </div>
+    ` : `
+      <div class="insight-actions">
+        <button onclick="markComplete('${action.id}')" class="btn btn-secondary w-full" id="complete-btn-${action.id}">
+          ✓ Mark as Completed (+100 XP)
+        </button>
+      </div>
+    `}
+  `;
+}
+
+function renderRecommendations() {
+  const el = document.getElementById('recs-loading');
+  el.style.display = 'none';
+  const grid = document.getElementById('recs-grid');
+  grid.style.display = 'grid';
+
+  if (!allRecommendations.length) {
+    grid.innerHTML = `
+      <div class="card" style="grid-column:1/-1;text-align:center;padding:48px;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">🎉</div>
+        <h3>You've committed to all actions!</h3>
+        <p style="max-width:320px;margin:8px auto;">You're a true climate champion. Check back as we add more actions.</p>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = allRecommendations.map(a => `
+    <div class="insight-card card-hover animate-fade-in-up" id="rec-card-${a.id}" style="position:relative;">
+      ${renderActionCard(a, false)}
+    </div>
+  `).join('');
+}
+
+function renderCommitted() {
+  const grid = document.getElementById('committed-grid');
+  const emptyEl = document.getElementById('committed-empty');
+
+  if (!committedActions.length) {
+    emptyEl.style.display = 'block';
+    grid.innerHTML = '';
+    document.getElementById('impact-summary').style.display = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  const pledged = committedActions.filter(a => a.status === 'pledged');
+  const totalSaving = pledged.reduce((sum, a) => sum + (a.co2_saved_kg || 0), 0);
+
+  grid.innerHTML = committedActions.map(a => `
+    <div class="insight-card animate-fade-in-up" id="committed-card-${a.id}" style="position:relative;border-color:rgba(34,197,94,0.2);">
+      <div class="committed-tag">${a.status === 'completed' ? '✓ Completed' : '🎯 Pledged'}</div>
+      ${renderActionCard(a, a.status === 'pledged')}
+    </div>
+  `).join('');
+
+  if (totalSaving > 0) {
+    document.getElementById('impact-summary').style.display = 'flex';
+    const el = document.getElementById('total-saving-display');
+    animateNumber(el, 0, totalSaving, 1200, 1);
+  }
+}
+
+async function commitAction(actionId) {
+  if (!api.auth.isLoggedIn()) {
+    openAuthModal('register');
+    return;
+  }
+  const btn = document.getElementById(`commit-btn-${actionId}`);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>'; }
+  try {
+    const data = await api.insights.commitAction(actionId);
+    showToast('Action pledged! 🌿', `+${data.xp_earned} XP earned!`, 'success');
+    if (data.new_badges?.length) {
+      data.new_badges.forEach(b => setTimeout(() => showBadgeUnlock(b), 800));
+    }
+    // Remove from recs, refresh
+    allRecommendations = allRecommendations.filter(a => a.id !== actionId);
+    renderRecommendations();
+  } catch (err) {
+    if (err.message.includes('Already committed')) {
+      showToast('Already pledged', 'You\'ve already committed to this action!', 'info');
+    } else {
+      showToast('Error', err.message, 'error');
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = "✅ I'll Do This (+75 XP)"; }
+  }
+}
+
+async function markComplete(actionId) {
+  const btn = document.getElementById(`complete-btn-${actionId}`);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>'; }
+  try {
+    const data = await api.insights.completeAction(actionId);
+    showToast('Action completed! 🎉', `+${data.xp_earned} XP bonus!`, 'success');
+    await loadCommitted();
+  } catch (err) {
+    showToast('Error', err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Mark as Completed (+100 XP)'; }
+  }
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('panel-recommendations').style.display = tab === 'recommendations' ? 'block' : 'none';
+  document.getElementById('panel-committed').style.display = tab === 'committed' ? 'block' : 'none';
+  document.getElementById('tab-recs').className = `tab-btn ${tab === 'recommendations' ? 'active' : ''}`;
+  document.getElementById('tab-committed').className = `tab-btn ${tab === 'committed' ? 'active' : ''}`;
+  document.getElementById('tab-recs').setAttribute('aria-selected', tab === 'recommendations');
+  document.getElementById('tab-committed').setAttribute('aria-selected', tab === 'committed');
+
+  if (tab === 'committed') loadCommitted();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNav('insights');
+  loadRecommendations();
+});
+</script>
+</body>
+</html>

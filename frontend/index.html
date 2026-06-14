@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarbonTrace — Know Your Carbon. Own Your Impact.</title>
+  <meta name="description" content="CarbonTrace helps you understand, track, and reduce your carbon footprint with AI-powered personalized recommendations and gamified progress tracking.">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav" id="main-nav" role="navigation" aria-label="Main navigation"></nav>
+
+<!-- Hero Section -->
+<main>
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-pill">
+        <span class="hero-pill-dot"></span>
+        AI-Powered Carbon Intelligence
+      </div>
+      <h1 class="font-display">
+        Know Your Carbon.<br>
+        <span class="gradient-text">Own Your Impact.</span>
+      </h1>
+      <p>
+        CarbonTrace turns your lifestyle into a clear carbon story — then gives you a personalized, ranked action plan to reduce it. Track progress, earn badges, and join a community of climate champions.
+      </p>
+      <div class="hero-ctas">
+        <a href="/calculator.html" class="btn btn-primary btn-lg" id="hero-cta-primary">
+          <span>🌱</span> Calculate My Footprint
+        </a>
+        <button onclick="openAuthModal('register')" class="btn btn-secondary btn-lg" id="hero-cta-secondary">
+          Create Free Account
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-bar" aria-label="Platform statistics">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <span class="stat-value" id="stat-users">12,400+</span>
+        <span class="stat-label">Carbon-aware users</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">2.3T</span>
+        <span class="stat-label">kg CO₂e tracked</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">18</span>
+        <span class="stat-label">Avg. % reduction</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">30+</span>
+        <span class="stat-label">Actionable green tips</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features-section" aria-labelledby="features-heading">
+  <div class="container">
+    <div class="section-header">
+      <h2 id="features-heading">Everything you need to<br><span class="gradient-text">go carbon-conscious</span></h2>
+      <p>From a 3-minute calculation to a lifetime of smarter habits — CarbonTrace meets you where you are.</p>
+    </div>
+    <div class="grid-2" style="gap:20px;">
+      <div class="feature-card card-hover" id="feature-calculator">
+        <div class="feature-icon">🔢</div>
+        <h3>Smart Carbon Calculator</h3>
+        <p>Answer a few quick questions about your transport, home energy, diet, and shopping. Our IPCC-sourced emission engine gives you a precise monthly breakdown in under 3 minutes — no spreadsheets needed.</p>
+      </div>
+      <div class="feature-card card-hover" id="feature-dashboard">
+        <div class="feature-icon">📊</div>
+        <h3>Live Tracking Dashboard</h3>
+        <p>Watch your CO₂e score change month-over-month. Compare yourself to national averages and the 1.5°C Paris target. Beautiful charts make complex data immediately understandable.</p>
+      </div>
+      <div class="feature-card card-hover" id="feature-insights">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Personalized Insights</h3>
+        <p>Our recommendation engine ranks green actions by your personal impact-to-effort ratio. No generic tips — every recommendation is tailored to where your footprint is highest.</p>
+      </div>
+      <div class="feature-card card-hover" id="feature-gamification">
+        <div class="feature-icon">🏆</div>
+        <h3>Streaks, Badges & XP</h3>
+        <p>Turn sustainability into a rewarding habit. Earn XP for logging entries, unlock badges for milestones, and maintain streaks that keep you accountable week after week.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it Works -->
+<section class="how-section" aria-labelledby="how-heading">
+  <div class="container">
+    <div class="section-header">
+      <h2 id="how-heading">From zero to<br><span class="gradient-text">climate-smart</span> in 4 steps</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-item" id="step-1">
+        <div class="step-num">1</div>
+        <h4>Calculate</h4>
+        <p>Complete our 4-category wizard covering transport, energy, diet, and shopping in under 3 minutes.</p>
+      </div>
+      <div class="step-item" id="step-2">
+        <div class="step-num">2</div>
+        <h4>Discover</h4>
+        <p>See your CO₂e score, category breakdown, and how you compare to national and global benchmarks.</p>
+      </div>
+      <div class="step-item" id="step-3">
+        <div class="step-num">3</div>
+        <h4>Act</h4>
+        <p>Get a personalized list of high-impact, low-effort actions ranked specifically for your lifestyle.</p>
+      </div>
+      <div class="step-item" id="step-4">
+        <div class="step-num">4</div>
+        <h4>Track</h4>
+        <p>Log monthly, earn badges, maintain streaks, and watch your score drop over time. Climate wins feel great.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Banner -->
+<section class="cta-banner" aria-labelledby="cta-heading">
+  <div class="container">
+    <div class="cta-inner">
+      <h2 id="cta-heading">Ready to know your<br><span class="gradient-text">carbon footprint?</span></h2>
+      <p>It takes 3 minutes. No sign-up required to get your first result.</p>
+      <div class="hero-ctas">
+        <a href="/calculator.html" class="btn btn-primary btn-lg" id="cta-start">
+          <span>🌱</span> Start for Free
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- Footer -->
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="nav-logo">
+        <div class="nav-logo-icon">🌿</div>
+        CarbonTrace
+      </div>
+      <p class="footer-copy">Emission factors sourced from IPCC AR6. Built with ❤️ for the planet.</p>
+    </div>
+  </div>
+</footer>
+
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    renderNav();
+    // Redirect to dashboard if logged in
+    if (api.auth.isLoggedIn()) {
+      const dashLink = document.getElementById('hero-cta-secondary');
+      if (dashLink) {
+        dashLink.textContent = 'Go to Dashboard';
+        dashLink.onclick = () => window.location.href = '/dashboard.html';
+      }
+    }
+  });
+</script>
+</body>
+</html>

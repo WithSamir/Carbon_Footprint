@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — CarbonTrace</title>
+  <meta name="description" content="Track your carbon footprint progress, view trends, and see your gamification achievements.">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+  <style>
+    .dashboard-header {
+      padding: 40px 0 32px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .stat-mini { text-align: center; padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); min-width: 120px; }
+    .stat-mini-value { font-family: 'Outfit', sans-serif; font-size: 1.75rem; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 4px; }
+    .stat-mini-label { font-size: 0.75rem; color: var(--text-muted); }
+    .chart-card { padding: 28px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-state-icon { font-size: 3rem; margin-bottom: 16px; }
+    .xp-bar-wrap { background: var(--bg-base); border-radius: var(--radius-full); height: 8px; overflow: hidden; margin: 8px 0; }
+    .xp-bar-fill { height: 100%; border-radius: var(--radius-full); background: linear-gradient(90deg, var(--green-500), var(--teal-400)); transition: width 1.5s cubic-bezier(0.4,0,0.2,1); }
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="main-nav" role="navigation" aria-label="Main navigation"></nav>
+
+<main class="page" id="main-content">
+  <div id="auth-gate" style="display:none;text-align:center;padding:120px 20px;">
+    <div style="font-size:3rem;margin-bottom:20px;">🔒</div>
+    <h2>Sign in to view your dashboard</h2>
+    <p style="margin:12px 0 28px;">Your personal carbon dashboard is available after creating an account.</p>
+    <button onclick="openAuthModal('login')" class="btn btn-primary btn-lg" id="gate-signin-btn">Sign In</button>
+    <button onclick="openAuthModal('register')" class="btn btn-secondary btn-lg" style="margin-left:12px;" id="gate-register-btn">Create Account</button>
+  </div>
+
+  <div id="dashboard-content" style="display:none;">
+    <div class="container">
+      <div class="dashboard-header">
+        <div>
+          <h1 id="welcome-heading">Welcome back 👋</h1>
+          <p id="welcome-sub" style="margin-top:4px;">Here's your carbon footprint summary.</p>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;" id="header-stats">
+          <div class="stat-mini" id="streak-stat">
+            <div class="stat-mini-value" id="streak-val">—</div>
+            <div class="stat-mini-label">🔥 Day Streak</div>
+          </div>
+          <div class="stat-mini" id="xp-stat">
+            <div class="stat-mini-value" id="xp-val">—</div>
+            <div class="stat-mini-label">⚡ Total XP</div>
+          </div>
+          <div class="stat-mini" id="entries-stat">
+            <div class="stat-mini-value" id="entries-val">—</div>
+            <div class="stat-mini-label">📅 Entries</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No data state -->
+      <div id="no-data-state" style="display:none;" class="card" role="alert">
+        <div class="empty-state">
+          <div class="empty-state-icon">🌱</div>
+          <h2>Your journey starts here</h2>
+          <p style="max-width:380px;margin:12px auto 28px;">You haven't logged your first carbon footprint yet. It takes just 3 minutes!</p>
+          <a href="/calculator.html" class="btn btn-primary btn-lg" id="first-calc-btn">Calculate My Footprint →</a>
+        </div>
+      </div>
+
+      <!-- Main dashboard grid -->
+      <div id="data-state" style="display:none;">
+        <div class="dashboard-grid">
+          <!-- Left: Main gauge card -->
+          <div class="card card-glow" id="gauge-card">
+            <div class="chart-header">
+              <h3>Current Footprint</h3>
+              <div id="trend-badge"></div>
+            </div>
+            <div class="gauge-wrapper" style="padding:0;">
+              <div style="position:relative;width:240px;height:240px;margin:0 auto;">
+                <canvas id="gauge-donut" width="240" height="240" aria-label="Current carbon footprint donut chart"></canvas>
+                <div class="gauge-center-text" style="transform:translate(-50%,-35%);">
+                  <div class="gauge-value gradient-text" id="gauge-val">0</div>
+                  <div class="gauge-unit">kg CO₂e/mo</div>
+                </div>
+              </div>
+              <div class="category-breakdown" id="dash-breakdown" style="margin-top:24px;width:100%;"></div>
+            </div>
+          </div>
+
+          <!-- Right panel -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <!-- XP / Level card -->
+            <div class="card" id="level-card">
+              <div style="display:flex;align-items:center;gap:16px;">
+                <div style="font-size:2.5rem;" id="level-icon">🌱</div>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                    <span style="font-weight:700;font-size:1rem;" id="level-name">Seedling</span>
+                    <span style="font-size:0.8125rem;color:var(--text-muted);" id="xp-display">0 XP</span>
+                  </div>
+                  <div class="xp-bar-wrap">
+                    <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%;"></div>
+                  </div>
+                  <div style="font-size:0.75rem;color:var(--text-muted);" id="xp-next-label">0 XP to next level</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Benchmarks -->
+            <div class="card" id="bench-card">
+              <h4 style="margin-bottom:16px;">How you compare</h4>
+              <div id="dash-benchmarks"></div>
+            </div>
+
+            <!-- CTA: Log or View Insights -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <a href="/calculator.html" class="btn btn-secondary" style="justify-content:center;" id="log-new-btn">
+                + Log New Entry
+              </a>
+              <a href="/insights.html" class="btn btn-primary" style="justify-content:center;" id="dash-insights-btn">
+                My Actions →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline chart -->
+        <div class="card chart-card mt-6" id="timeline-card">
+          <div class="chart-header">
+            <h3>Monthly Trend</h3>
+            <span class="badge badge-green" id="trend-text">Tracking</span>
+          </div>
+          <canvas id="timeline-chart" height="100" aria-label="Monthly carbon footprint trend chart"></canvas>
+        </div>
+
+        <!-- Badges section -->
+        <div class="mt-6" id="badges-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3>Your Badges</h3>
+            <span class="badge badge-teal" id="badges-count">0 earned</span>
+          </div>
+          <div class="badges-grid" id="badges-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script>
+const ALL_BADGES = [
+  { id: 'carbon-aware',       name: 'Carbon Aware',     icon: '🌱', description: 'Completed first calculation' },
+  { id: 'week-warrior',       name: 'Week Warrior',     icon: '🔥', description: '7-day streak' },
+  { id: 'action-taker',       name: 'Action Taker',     icon: '⚡', description: 'First green action committed' },
+  { id: 'planet-protector',   name: 'Planet Protector', icon: '🌍', description: '5 actions committed' },
+  { id: 'plant-pioneer',      name: 'Plant Pioneer',    icon: '🥗', description: 'Committed to a diet action' },
+  { id: 'carbon-cutter',      name: 'Carbon Cutter',    icon: '✂️', description: 'Reduced footprint by 10%' },
+  { id: 'eco-streak',         name: 'Eco Streak',       icon: '🏅', description: '30-day streak' },
+  { id: 'community-champion', name: 'Community Champion', icon: '🏆', description: '10 actions completed' },
+];
+
+const CATEGORY_CONFIG = [
+  { key: 'transport_kg',    label: 'Transport',   color: '#22c55e', icon: '🚗' },
+  { key: 'diet_kg',         label: 'Diet',        color: '#14b8a6', icon: '🥗' },
+  { key: 'home_energy_kg',  label: 'Home Energy', color: '#3b82f6', icon: '🏠' },
+  { key: 'shopping_kg',     label: 'Shopping',    color: '#a855f7', icon: '🛍' },
+];
+
+let timelineChart = null;
+let donutChart = null;
+
+async function loadDashboard() {
+  try {
+    const [summaryRes, historyRes] = await Promise.all([
+      api.carbon.summary(),
+      api.carbon.history(),
+    ]);
+
+    const user = api.auth.getUser();
+    document.getElementById('welcome-heading').textContent = `Welcome back, ${user?.display_name || 'there'} 👋`;
+
+    if (!summaryRes.has_data) {
+      document.getElementById('no-data-state').style.display = 'block';
+      document.getElementById('data-state').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('no-data-state').style.display = 'none';
+    document.getElementById('data-state').style.display = 'block';
+
+    const latest = summaryRes.latest;
+    const xpLevel = summaryRes.xp_level;
+    const badges = summaryRes.badges || [];
+
+    // Header stats
+    document.getElementById('streak-val').textContent = summaryRes.streak_days || 0;
+    document.getElementById('xp-val').textContent = (xpLevel?.xp || 0).toLocaleString();
+    document.getElementById('entries-val').textContent = summaryRes.entries_count || 0;
+
+    // Trend badge
+    const trend = summaryRes.trend_pct;
+    const trendEl = document.getElementById('trend-badge');
+    if (trend !== null && trend !== undefined) {
+      const isGood = trend < 0;
+      trendEl.innerHTML = `<span class="badge ${isGood ? 'badge-green' : 'badge-red'}">${isGood ? '▼' : '▲'} ${Math.abs(trend)}% vs last month</span>`;
+    }
+
+    // Gauge
+    renderDonut(latest);
+    document.getElementById('gauge-val').textContent = latest.total_kg.toFixed(1);
+    renderBreakdown(latest);
+    renderDashBenchmarks(latest);
+
+    // XP Level
+    document.getElementById('level-icon').textContent = xpLevel.level_icon;
+    document.getElementById('level-name').textContent = xpLevel.level_name;
+    document.getElementById('xp-display').textContent = `${xpLevel.xp.toLocaleString()} XP`;
+    document.getElementById('xp-next-label').textContent = xpLevel.xp_for_next
+      ? `${(xpLevel.xp_for_next - xpLevel.xp).toLocaleString()} XP to ${xpLevel.next_level_name}`
+      : '🎉 Max Level Reached!';
+    setTimeout(() => {
+      document.getElementById('xp-bar-fill').style.width = xpLevel.progress_pct + '%';
+    }, 300);
+
+    // Timeline
+    renderTimeline(historyRes.entries);
+
+    // Badges
+    renderBadges(badges);
+
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to load dashboard', err.message, 'error');
+  }
+}
+
+function renderDonut(entry) {
+  const ctx = document.getElementById('gauge-donut').getContext('2d');
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: CATEGORY_CONFIG.map(c => c.label),
+      datasets: [{
+        data: CATEGORY_CONFIG.map(c => Math.max(0, entry[c.key] || 0)),
+        backgroundColor: CATEGORY_CONFIG.map(c => c.color),
+        borderColor: 'transparent',
+        borderWidth: 0,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)} kg` } } },
+      animation: { animateRotate: true, duration: 1000 },
+    }
+  });
+}
+
+function renderBreakdown(entry) {
+  const total = entry.total_kg || 1;
+  const el = document.getElementById('dash-breakdown');
+  el.innerHTML = CATEGORY_CONFIG.map(c => {
+    const val = entry[c.key] || 0;
+    const pct = Math.round((val / total) * 100);
+    return `
+      <div class="category-row">
+        <span style="font-size:0.875rem;">${c.icon}</span>
+        <span class="category-name">${c.label}</span>
+        <div class="category-bar-wrap">
+          <div class="category-bar-fill" style="width:${pct}%;background:${c.color};"></div>
+        </div>
+        <span class="category-val" style="color:${c.color};font-size:0.8125rem;">${val.toFixed(0)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDashBenchmarks(entry) {
+  const el = document.getElementById('dash-benchmarks');
+  const global = 400; const national = 580; const paris = 192;
+  const my = entry.total_kg;
+  const rows = [
+    { label: '🌍 Global avg', val: global },
+    { label: '🏳 National avg', val: national },
+    { label: '🎯 Paris target', val: paris },
+  ];
+  el.innerHTML = rows.map(r => {
+    const diff = my - r.val;
+    const color = diff < 0 ? 'var(--green-400)' : '#f87171';
+    const sign = diff < 0 ? '▼' : '▲';
+    return `
+      <div class="benchmark-card" style="margin-bottom:8px;">
+        <span class="benchmark-label">${r.label}</span>
+        <div>
+          <span style="font-size:0.875rem;font-weight:600;">${r.val} kg</span>
+          <span style="font-size:0.75rem;color:${color};margin-left:6px;">${sign} ${Math.abs(diff).toFixed(0)} kg</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTimeline(entries) {
+  if (!entries?.length) return;
+  const ctx = document.getElementById('timeline-chart').getContext('2d');
+  if (timelineChart) timelineChart.destroy();
+
+  const labels = entries.map(e => {
+    const d = new Date(e.entry_date);
+    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  });
+  const values = entries.map(e => e.total_kg);
+
+  timelineChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Your footprint',
+          data: values,
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#22c55e',
+          pointRadius: 5,
+          pointHoverRadius: 8,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'Paris target',
+          data: values.map(() => 192),
+          borderColor: 'rgba(59,130,246,0.5)',
+          borderDash: [6, 4],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#9ca3af', font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} kg CO₂e` } }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#6b7280', font: { size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#6b7280', font: { size: 11 }, callback: v => v + ' kg' }
+        }
+      }
+    }
+  });
+
+  // Trend text
+  if (values.length >= 2) {
+    const first = values[0], last = values[values.length - 1];
+    const chg = ((last - first) / first * 100).toFixed(1);
+    const trendEl = document.getElementById('trend-text');
+    trendEl.textContent = chg < 0 ? `↓ ${Math.abs(chg)}% total reduction` : `↑ ${chg}% change`;
+    trendEl.className = `badge ${chg < 0 ? 'badge-green' : 'badge-orange'}`;
+  }
+}
+
+function renderBadges(earnedBadges) {
+  const earnedIds = new Set(earnedBadges.map(b => b.id));
+  const el = document.getElementById('badges-grid');
+  el.innerHTML = ALL_BADGES.map(b => `
+    <div class="badge-item ${earnedIds.has(b.id) ? 'earned' : 'locked'}" id="badge-item-${b.id}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${b.description}</div>
+      ${earnedIds.has(b.id) ? '<div class="badge badge-green mt-2" style="margin:8px auto 0;">Earned ✓</div>' : ''}
+    </div>
+  `).join('');
+  document.getElementById('badges-count').textContent = `${earnedIds.size} earned`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNav('dashboard');
+  if (!api.auth.isLoggedIn()) {
+    document.getElementById('auth-gate').style.display = 'block';
+    document.getElementById('dashboard-content').style.display = 'none';
+  } else {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('dashboard-content').style.display = 'block';
+    loadDashboard();
+  }
+});
+</script>
+</body>
+</html>
