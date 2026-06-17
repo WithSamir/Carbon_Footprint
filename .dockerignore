@@ -1,0 +1,16 @@
+.git
+.gitignore
+.vscode
+.DS_Store
+__pycache__
+*.pyc
+*.pyo
+*.db
+backend/venv
+backend/__pycache__
+backend/routes/__pycache__
+backend/services/__pycache__
+README.md
+setup.sh
+start.sh
+*.md

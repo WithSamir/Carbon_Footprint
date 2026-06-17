@@ -1,13 +1,23 @@
+"""
+SQLAlchemy ORM models for CarbonTrace.
+
+Defines the database schema for users, carbon footprint entries,
+and user green actions with relationships and serialization methods.
+"""
+
 from extensions import db
 from datetime import datetime, date
 import uuid
 
 
-def gen_uuid():
+def gen_uuid() -> str:
+    """Generate a new UUID4 string for use as a primary key."""
     return str(uuid.uuid4())
 
 
 class User(db.Model):
+    """User account with authentication credentials and gamification state."""
+
     __tablename__ = 'users'
 
     id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
@@ -36,6 +46,8 @@ class User(db.Model):
 
 
 class CarbonEntry(db.Model):
+    """Monthly carbon footprint entry with category breakdown."""
+
     __tablename__ = 'carbon_entries'
 
     id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
@@ -62,6 +74,8 @@ class CarbonEntry(db.Model):
 
 
 class UserAction(db.Model):
+    """User commitment to a green action with pledge/completion tracking."""
+
     __tablename__ = 'user_actions'
 
     id = db.Column(db.String(36), primary_key=True, default=gen_uuid)

@@ -1,7 +1,16 @@
+"""
+Configuration module for CarbonTrace application.
+
+Loads settings from environment variables with sensible defaults
+for local development. All secrets should be overridden in production.
+"""
+
 import os
 from datetime import timedelta
 
+
 class Config:
+    """Application configuration with environment variable overrides."""
     SECRET_KEY = os.environ.get('SECRET_KEY', 'carbontrace-dev-secret-key-change-in-prod')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'carbontrace-jwt-secret-change-in-prod')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)
