@@ -6,7 +6,7 @@ ratio, action pledging/completion tracking, and potential impact summaries.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
@@ -157,7 +157,7 @@ def complete_action():
         return jsonify({'error': 'Action already completed'}), 409
 
     user_action.status = 'completed'
-    user_action.completed_at = datetime.utcnow()
+    user_action.completed_at = datetime.now(timezone.utc)
     user = db.session.get(User, user_id)
     completion_xp = 100
     award_xp(user, completion_xp)

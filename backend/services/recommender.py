@@ -1,8 +1,9 @@
 import json
-import numpy as np
+from functools import lru_cache
 from config import Config
 
 
+@lru_cache(maxsize=1)
 def load_actions():
     with open(Config.ACTIONS_CATALOGUE_PATH) as f:
         return json.load(f)
@@ -26,7 +27,6 @@ def get_recommendations(user_entry: dict, committed_action_ids: list, limit: int
         'shopping': user_entry.get('shopping_kg', 0),
     }
     top_category = max(categories, key=categories.get)
-    total = sum(categories.values()) or 1
 
     scored = []
     for action in actions:

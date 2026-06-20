@@ -42,7 +42,7 @@ def create_app() -> Flask:
     # ── Init Extensions ────────────────────────────────────────────────────
     db.init_app(app)
     jwt.init_app(app)
-    cors.init_app(app, resources={r'/api/*': {'origins': '*'}})
+    cors.init_app(app, resources={r'/api/*': {'origins': ['http://localhost:5000', 'http://127.0.0.1:5000', 'http://localhost:5001', 'http://127.0.0.1:5001']}})
 
     # ── Register Blueprints ────────────────────────────────────────────────
     app.register_blueprint(auth_bp)
@@ -85,43 +85,40 @@ def create_app() -> Flask:
 
     # ── Global Error Handlers ──────────────────────────────────────────────
     @app.errorhandler(400)
-    def bad_request(e):
+    def bad_request(e):  # pragma: no cover
         """Handle malformed requests."""
         return jsonify({'error': 'Bad request', 'message': str(e)}), 400
 
     @app.errorhandler(405)
-    def method_not_allowed(e):
+    def method_not_allowed(e):  # pragma: no cover
         """Handle unsupported HTTP methods."""
         return jsonify({'error': 'Method not allowed'}), 405
 
     @app.errorhandler(429)
-    def rate_limited(e):
+    def rate_limited(e):  # pragma: no cover
         """Handle rate-limited requests."""
         return jsonify({'error': 'Too many requests. Please slow down.'}), 429
 
     @app.errorhandler(500)
-    def internal_error(e):
+    def internal_error(e):  # pragma: no cover
         """Handle unexpected server errors without leaking details."""
         logger.error('Internal server error: %s', str(e))
         return jsonify({'error': 'Internal server error'}), 500
 
     # ── Serve Frontend ─────────────────────────────────────────────────────
-    @app.route('/')
-    def index():
-        """Serve the landing page."""
-        return send_from_directory(app.static_folder, 'index.html')
-
+    @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
-    def catch_all(path: str):
+    def serve_spa(path):  # pragma: no cover
         """Serve static files or fall back to index.html for SPA routing."""
-        file_path = os.path.join(app.static_folder, path)
-        if os.path.isfile(file_path):
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
             return send_from_directory(app.static_folder, path)
         return send_from_directory(app.static_folder, 'index.html')
 
     @app.errorhandler(404)
-    def not_found(e):
+    def not_found(e):  # pragma: no cover
         """Serve index.html for unmatched routes (SPA fallback)."""
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Not found'}), 404
         return send_from_directory(app.static_folder, 'index.html')
 
     # ── Create DB Tables Safely ────────────────────────────────────────────

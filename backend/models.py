@@ -6,7 +6,7 @@ and user green actions with relationships and serialization methods.
 """
 
 from extensions import db
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import uuid
 
 
@@ -25,7 +25,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     display_name = db.Column(db.String(100), nullable=True)
     country = db.Column(db.String(3), default='GBR')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     xp_total = db.Column(db.Integer, default=0)
     streak_days = db.Column(db.Integer, default=0)
     last_log_date = db.Column(db.Date, nullable=True)
@@ -59,7 +59,7 @@ class CarbonEntry(db.Model):
     shopping_kg = db.Column(db.Float, default=0.0)
     total_kg = db.Column(db.Float, default=0.0)
     raw_inputs = db.Column(db.JSON, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
@@ -82,7 +82,7 @@ class UserAction(db.Model):
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     action_id = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), default='pledged')  # pledged, completed, skipped
-    committed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    committed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = db.Column(db.DateTime, nullable=True)
     co2_saved_kg = db.Column(db.Float, default=0.0)
 

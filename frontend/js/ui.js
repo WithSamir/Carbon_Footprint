@@ -188,7 +188,7 @@ function renderNav(activePage = '') {
       <div style="display:flex;align-items:center;gap:10px;">
         ${isLoggedIn
           ? `<span style="font-size:0.875rem;color:var(--text-muted);">
-               Hi, <strong style="color:var(--text-primary);">${user?.display_name || 'there'}</strong>
+               Hi, <strong style="color:var(--text-primary);">${(user?.display_name || 'there').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')}</strong>
              </span>
              <button onclick="api.auth.logout()" class="btn btn-ghost btn-sm" id="nav-logout">Sign Out</button>`
           : `<button onclick="openAuthModal('login')" class="btn btn-ghost btn-sm" id="nav-signin">Sign In</button>
